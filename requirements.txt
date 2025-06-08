@@ -1,0 +1,6 @@
+requests
+beautifulsoup4
+pymongo
+langchain
+langchain-community
+faiss-cpu
