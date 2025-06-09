@@ -9,8 +9,6 @@ from langchain_community.document_loaders import PyPDFLoader, TextLoader, Docx2t
 import json
 
 
-LOCAL_DOCS_DIR = "data/local_docs"
-
 # MONGO DB CONNECTION
 
 MONGO_URI = os.getenv("MONGO_URI", "mongodb+srv://franklin:Uche2006@cluster0.psnxlha.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
@@ -19,7 +17,7 @@ MONGO_COLLECTION_NAME = os.getenv("MONGO_COLLECTION_NAME", "raw_documents")
 
 
 RAW_WEB_DATA_DIR = "data/raw_web_data"
-LOCAL_DOCS_DIR = "data/local_docs"
+LOCAL_DOCS_DIR = "src/data/local_docs"
 
 os.makedirs(RAW_WEB_DATA_DIR, exist_ok=True)
 os.makedirs(LOCAL_DOCS_DIR, exist_ok=True)
@@ -40,7 +38,14 @@ NIGERIAN_HISTORY_URLS = [
     "https://www.britannica.com/topic/history-of-Nigeria",
     "https://en.wikipedia.org/wiki/History_of_Nigeria",
     "https://en.wikipedia.org/wiki/Virtual_Museum_of_Modern_Nigerian_Art",
-    "https://library.columbia.edu/libraries/global/virtual-libraries/african_studies/countries/nigeria/hist.html"
+    "https://library.columbia.edu/libraries/global/virtual-libraries/african_studies/countries/nigeria/hist.html",
+    "https://www.thehistoryville.com/?utm_source=chatgpt.com",
+    "https://oldnaija.com/?utm_source=chatgpt.com",
+    "https://www.historicalsocietynigeria.org.ng/?utm_source=chatgpt.com",
+    "https://archivi.ng/?utm_source=chatgpt.com",
+    "https://www.ofemipo.org/?utm_source=chatgpt.com",
+    "https://www.onthisday.com/countries/nigeria?utm_source=chatgpt.com",
+    "https://www.withinnigeria.com/piece/2024/10/27/10-historical-sites-in-nigeria-and-their-location/?utm_source=chatgpt.com",
 ]
 
 def get_mongo_collection():
