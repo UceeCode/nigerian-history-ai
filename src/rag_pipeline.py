@@ -20,7 +20,7 @@ class NigerianHistoryRAG:
     This creates the "brain" of our AI assistant that can find and explain information.
     """
     
-    def __init__(self, model_type: str = "ollama", model_name: str = "mistral:7b"):
+    def __init__(self, model_type: str = "ollama", model_name: str = "mistral"):
         self.faiss_index_path = os.path.join("data", "faiss_index")
         self.model_type = model_type
         self.model_name = model_name
@@ -92,7 +92,7 @@ class NigerianHistoryRAG:
         """
         
         # Step 1: Find relevant information
-        relevant_documents = self.search_relevant_chunks(question, top_k = 10)
+        relevant_documents = self.search_relevant_chunks(question, top_k = 5)
         
         # Step 2: Prepare context (combine relevant chunks)
         context_parts = []

@@ -27,16 +27,16 @@ export interface QuestionResponse {
     timestamp: string;
     response_time_ms: number;
 }
-  
+
 /**
    * Defines the structure of an error response from the API.
    * This typically maps to HTTPException details from FastAPI.
 */
-  export interface ApiError {
+export interface ApiError {
     detail: string; 
     status_code: number; 
-  }
-  
+}
+
 /**
    * Defines the structure for potential future topics/suggestions from the API.
 */
