@@ -11,6 +11,9 @@ from langchain.prompts import PromptTemplate
 from langchain.schema import BaseOutputParser 
 from langchain.docstore.document import Document 
 
+from fastapi import FastAPI
+from fastapi.responses import StreamingResponse
+
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -20,10 +23,11 @@ class NigerianHistoryRAG:
     This creates the "brain" of our AI assistant that can find and explain information.
     """
     
-    def __init__(self, model_type: str = "ollama", model_name: str = "mistral"):
+    def __init__(self, model_type, model_name):
         self.faiss_index_path = os.path.join("data", "faiss_index")
         self.model_type = model_type
         self.model_name = model_name
+        self.max_context_length = 3500 
         
         print("🤖 Loading embedding model 'all-MiniLM-L6-v2'...")
         self.embedding_model = HuggingFaceEmbeddings(model_name='all-MiniLM-L6-v2')
@@ -50,10 +54,7 @@ class NigerianHistoryRAG:
         )
         
     def _initialize_llm(self):
-        if self.model_type == "ollama":
-            return Ollama(model=self.model_name) 
-        else:
-            raise ValueError(f"Unsupported model type: {self.model_type}")
+            return Ollama(model="llama3.2:1b", temperature=0.6, top_p=0.8, repeat_penalty=1.05, top_k=20) 
         
     def _load_vector_store(self):
         print(f"Loading FAISS index from: {self.faiss_index_path}...")
@@ -74,7 +75,7 @@ class NigerianHistoryRAG:
             print(f"Error loading FAISS index: {e}")
             raise
             
-    def search_relevant_chunks(self, query: str, top_k: int = 5) -> List[Document]:
+    def search_relevant_chunks(self, query: str, top_k: int = 23) -> List[Document]:
         """
         Find the most relevant chunks for a query using the loaded FAISS vector store.
         """
@@ -92,7 +93,7 @@ class NigerianHistoryRAG:
         """
         
         # Step 1: Find relevant information
-        relevant_documents = self.search_relevant_chunks(question, top_k = 5)
+        relevant_documents = self.search_relevant_chunks(question, top_k = 3)
         
         # Step 2: Prepare context (combine relevant chunks)
         context_parts = []
@@ -114,18 +115,15 @@ class NigerianHistoryRAG:
             sources.add(f"{source_title} ({source_url})")
         
         context = "".join(context_parts)
+
+            
         
-        if not context.strip():
-            answer = "Abeg no vex, I no too get correct information wey fit answer this your question well."
-            print("No context generated from relevant chunks.")
-        else:
-            # Step 3: Generate answer using the language model      
-            print(f"Generating answer using {self.model_type}...")
-            if self.model_type == "ollama":
-                prompt = self.prompt_template.format(context=context, question=question)
-                answer = self.llm.invoke(prompt)
-            else:
-                answer = "Error: Unsupported LLM type configured."
+        # Step 3: Generate answer using the language model      
+        print(f"Generating answer using {self.model_type}...")
+        prompt = self.prompt_template.format(context=context, question=question)
+       
+        answer = self.llm.invoke(prompt)
+        
                 
         # Step 4: Prepare response
         response = {
@@ -155,7 +153,7 @@ class NigerianHistoryRAG:
 if __name__ == "__main__":
     print("Starting Nigerian History RAG System...")
     
-    rag = NigerianHistoryRAG(model_type="ollama", model_name="mistral:7b")
+    rag = NigerianHistoryRAG(model_type="ollama", model_name="llama3.2:1b")
     
     test_questions = [
         "Who designed the Nigerian flag?", 
