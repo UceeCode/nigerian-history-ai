@@ -1,78 +1,102 @@
-import axios, { AxiosError } from "axios";
+import axios from "axios";
 import { QuestionResponse, FeedbackData, HealthResponse, ApiError } from '../types';
+
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 // Create an Axios instance with default configuration
-const apiClient = axios.create({
+const axiosApi = axios.create({
     baseURL: API_BASE_URL,
-    timeout: 345000,
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    timeout: 10000,
 });
 
-apiClient.interceptors.request.use(
-    (config) => {
-      console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`);
-      return config;
-    },
-    (error) => {
-      console.error('❌ API Request Error:', error);
-      return Promise.reject(error);
+
+interface StreamMetadata {
+  type: 'metadata';
+  sources: string[];
+  relevant_chunks_found: number;
+  context_chunks_used: number;
+}
+
+interface StreamChunk {
+  type: 'chunk';
+  content: string;
+}
+
+interface StreamEnd {
+  type: 'end';
+  full_answer: string;
+  timestamp: string;
+  generation_time: string;
+}
+
+type StreamResponsePart = StreamMetadata | StreamChunk | StreamEnd;
+
+
+// function for streaming responses
+
+export const askQuestionStream = async (question: string, onStreamUpdate: (content: string, sources: string[]) => void, onStreamEnd: (fullAnswer: string) => void, onError: (error: string) => void) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/ask`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ question })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
     }
-);
 
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error("Failed to get readable stream from response.");
+    }
 
-// Add a response interceptor for logging successful responses and centralized error handling
-apiClient.interceptors.response.use(
-    (response) => {
-      console.log(`✅ API Response: ${response.status} ${response.config.url}`);
-      return response;
-    },
-    (error: AxiosError<ApiError>) => { 
-      console.error('❌ API Response Error:', error.response?.status, error.message);
-  
-      let errorMessage = 'An unexpected error occurred. Please try again.';
-      if (error.response) {
-        errorMessage = error.response.data?.detail || `Server error: ${error.response.status}`;
-        if (error.response.status === 503) {
-            errorMessage = 'The AI service is currently unavailable. Please wait a moment and try again.';
-        } else if (error.response.status === 400) {
-            errorMessage = error.response.data?.detail || 'Bad request. Please check your input.';
+    const decoder = new TextDecoder('utf-8')
+    let accumulatedContent = '';
+    let sources: string[] = [];
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+
+      const lines = chunk.split('\n').filter(line => line.trim() !== '');
+
+      for (const line of lines) {
+        try {
+          const jsonLine = line.startsWith('data: ') ? line.substring(6) : line;
+          if (jsonLine.trim() === '') continue;
+          
+          const parsed: StreamResponsePart = JSON.parse(jsonLine);
+
+          if (parsed.type == 'metadata') {
+            sources = (parsed as StreamMetadata).sources;
+            onStreamUpdate(accumulatedContent, sources);
+          } else if (parsed.type == 'chunk') {
+            accumulatedContent += (parsed as StreamChunk).content;
+            onStreamUpdate(accumulatedContent, sources);
+          } else if (parsed.type == 'end'){
+            onStreamEnd((parsed as StreamEnd).full_answer);
+            return;
+          }
+        } catch (e) {
+          console.error("Failed to parse JSON line from stream:", line, e);
         }
-      } else if (error.request) {
-        errorMessage = 'No response from server. Please check your internet connection or if the API is running.';
-      } else {
-        errorMessage = `Request setup error: ${error.message}`;
       }
-      
-      return Promise.reject(new Error(errorMessage));
     }
-);
+  } catch (error: any) {
+    console.error('Streaming API Error:', error);
+    onError(error.message || 'Network error during streaming.');
+  }
+}
 
-// --- API Functions ---
 
-/**
- * Sends a question to the Nigerian History AI assistant.
- * @param question The user's question string.
- * @param maxSources Optional: Maximum number of sources to request in the response (defaults to 5).
- * @returns A Promise that resolves to a QuestionResponse object.
- */
-export const askQuestion = async (
-    question: string,
-    maxSources: number = 5 
-  ): Promise<QuestionResponse> => {
-    try {
-      const response = await apiClient.post<QuestionResponse>('/ask', {
-        question,
-        max_sources: maxSources, 
-      });
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
-};
+
 
 /**
  * Checks the health status of the backend API.
@@ -80,7 +104,7 @@ export const askQuestion = async (
  */
 export const checkHealth = async (): Promise<HealthResponse> => {
     try {
-      const response = await apiClient.get<HealthResponse>('/health');
+      const response = await axiosApi.get<HealthResponse>('/health');
       return response.data; 
     } catch (error) {
       console.error('Error fetching health status:', error);
@@ -95,7 +119,7 @@ export const checkHealth = async (): Promise<HealthResponse> => {
    */
 export const submitFeedback = async (feedback: FeedbackData): Promise<void> => {
     try {
-      await apiClient.post('/feedback', feedback);
+      await axiosApi.post('/feedback', feedback);
     } catch (error) {
       console.error('Error submitting feedback:', error);
       throw error;
