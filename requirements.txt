@@ -4,3 +4,10 @@ pymongo
 langchain
 langchain-community
 faiss-cpu
+langchain-groq
+fastapi
+uvicorn[standard]
+python-dotenv
+sentence-transformers
+aiohttp
+watchfiles
