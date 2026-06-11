@@ -215,9 +215,16 @@ async def ask_question_stream(request: QuestionRequest):
             
             # Stream the LLM response
             for chunk in rag_system.llm.stream(prompt):
-                chunk_data = {"type": "chunk", "content": chunk}
-                yield f"data: {json.dumps(chunk_data)}\n\n"
-                full_answer_content += chunk
+                # ChatGroq returns AIMessageChunk objects, extract the text content
+                if hasattr(chunk, 'content'):
+                    content = chunk.content
+                else:
+                    content = str(chunk)
+                
+                if content:
+                    chunk_data = {"type": "chunk", "content": content}
+                    yield f"data: {json.dumps(chunk_data)}\n\n"
+                    full_answer_content += content
             
             # Send final message
             final_message = {

@@ -5,11 +5,12 @@ from datetime import datetime
 import time
 
 from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.llms import Ollama
+from langchain_groq import ChatGroq
 from langchain_community.vectorstores import FAISS 
 from langchain.prompts import PromptTemplate
 from langchain.schema import BaseOutputParser 
 from langchain.docstore.document import Document 
+
 
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
@@ -54,8 +55,12 @@ class NigerianHistoryRAG:
         )
         
     def _initialize_llm(self):
-            return Ollama(model="llama3.2:1b", temperature=0.6, top_p=0.8, repeat_penalty=1.05, top_k=20) 
-        
+        return ChatGroq(
+            model="llama-3.1-8b-instant",
+            temperature=0.6,
+            api_key=os.getenv("GROQ_API_KEY")
+        )
+            
     def _load_vector_store(self):
         print(f"Loading FAISS index from: {self.faiss_index_path}...")
 
@@ -153,7 +158,7 @@ class NigerianHistoryRAG:
 if __name__ == "__main__":
     print("Starting Nigerian History RAG System...")
     
-    rag = NigerianHistoryRAG(model_type="ollama", model_name="llama3.2:1b")
+    rag = NigerianHistoryRAG(model_type="groq", model_name="llama-3.1-8b-instant")
     
     test_questions = [
         "Who designed the Nigerian flag?", 

@@ -1,2 +1,10 @@
 .env
+__pycache__/
+*.pyc
+.venv/
 venv/
+data/raw_web_data/
+data/feedback_log.jsonl
+node_modules/
+.next/
+*.log
