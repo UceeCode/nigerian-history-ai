@@ -8,6 +8,7 @@ import time
 from datetime import datetime
 import uvicorn
 import json
+import os
 
 from rag_pipeline import NigerianHistoryRAG
 
@@ -72,7 +73,7 @@ async def startup_event():
     print("🚀 Starting Nigerian History AI API...")
     
     try:
-        rag_system = NigerianHistoryRAG(model_type="ollama", model_name="mistral:7b")
+        rag_system = NigerianHistoryRAG(model_type="groq", model_name="llama-3.1-8b-instant")
         
         print("✅ RAG system initialized successfully!")
         
@@ -288,4 +289,5 @@ if __name__ == "__main__":
     # uvicorn src.api:app --host 0.0.0.0 --port 8000 --reload
     # --reload is useful for development to automatically restart on code changes.
     # For production, remove --reload.
-    uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True, log_level="info")
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("api:app", host="0.0.0.0", port=port, reload=False, log_level="info")

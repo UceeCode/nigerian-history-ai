@@ -7,9 +7,8 @@ import time
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_groq import ChatGroq
 from langchain_community.vectorstores import FAISS 
-from langchain.prompts import PromptTemplate
-from langchain.schema import BaseOutputParser 
-from langchain.docstore.document import Document 
+from langchain_core.prompts import PromptTemplate
+from langchain_core.documents import Document
 
 
 from fastapi import FastAPI
