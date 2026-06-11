@@ -285,9 +285,13 @@ async def submit_feedback_endpoint(feedback_request: FeedbackRequest, background
     return {"message": "Feedback received and being processed in the background."}
 
 if __name__ == "__main__":
-    # To run the FastAPI app:
-    # uvicorn src.api:app --host 0.0.0.0 --port 8000 --reload
-    # --reload is useful for development to automatically restart on code changes.
-    # For production, remove --reload.
     port = int(os.environ.get("PORT", 8000))
-    uvicorn.run("api:app", host="0.0.0.0", port=port, reload=False, log_level="info")
+    uvicorn.run(
+        "api:app",
+        host="0.0.0.0",
+        port=port,
+        reload=False,
+        log_level="info",
+        timeout_keep_alive=120,
+        timeout_graceful_shutdown=30
+    )
